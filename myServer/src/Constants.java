@@ -20,6 +20,7 @@ public interface Constants
     short NET_CLIENT_PING = 101;
     short NET_CLIENT_JOIN_REQUEST = 102;
     short NET_CLIENT_CHAT = 110;
+    short NET_CLIENT_QUIT = 110;
 
     // Server Network Signal IDs:
     short NET_SERVER_PING = 201;
@@ -29,4 +30,5 @@ public interface Constants
     short NET_SERVER_JOIN_DENY_NO_ROOM = 205;
     short NET_SERVER_JOIN_DENY_DUPLICATE = 206;
     short NET_SERVER_CHAT = 210;
+    short NET_SERVER_QUIT = 220;
 }
