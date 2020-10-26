@@ -61,7 +61,7 @@ class Client_Manager
                     // Check if this new client is allowed to connect:
                     if(true) // TODO Add some conditions!
                     {
-                        Client newClient = new Client();
+                        Client newClient = new Client(socket, this);
                         clientList.add(newClient);
                     }
                 }
