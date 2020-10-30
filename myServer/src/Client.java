@@ -11,8 +11,8 @@ public class Client implements Runnable {
     public String username;
     public String address;
     public Socket clientSocket;
-    private DataInputStream in;
-    private DataOutputStream out;
+    public DataInputStream in;
+    public DataOutputStream out;
     boolean listening;
     boolean admin;
 
@@ -47,6 +47,8 @@ public class Client implements Runnable {
         catch (IOException e) {
             System.err.println("Client could not read short");
         }
+        //Stops thread when while loop is done
+        return;
     }
 
     //Booleans are listed below
