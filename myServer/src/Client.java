@@ -2,8 +2,9 @@ package src;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.net.InetSocketAddress;
+import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
 
 public class Client implements Runnable {
     private Client_Manager owner;
@@ -21,11 +22,30 @@ public class Client implements Runnable {
         this.username = newUsername;
         this.owner = newOwner;
         address = clientSocket.getRemoteSocketAddress().toString();
+        try {
+            in = new DataInputStream(clientSocket.getInputStream());
+            out = new DataOutputStream(clientSocket.getOutputStream());
+            }
+        catch (IOException e) {
+            System.err.println("Client could not get input stream");
+        }
     }
 
+    //Reads message written by client
     public void run() {
-        while (isListening()) {
-
+        try {
+        while (listening) {
+            short input = in.readShort();
+            if (input == owner.owner.NET_CLIENT_CHAT) {
+                byte[] array = new byte[in.readInt()];
+                in.read(array);
+                String message = Arrays.toString(array);
+                owner.handleClientInput(message, this);
+            }
+        }
+        }
+        catch (IOException e) {
+            System.err.println("Client could not read short");
         }
     }
 
