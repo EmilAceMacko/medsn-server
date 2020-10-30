@@ -3,6 +3,7 @@ package src;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -32,6 +33,13 @@ class Client_Manager
         }
     }
 
+    // Handle input strings from the connected Clients:
+    void handleClientInput(String msg)
+    {
+
+    }
+
+    // Check if any Clients are requesting to connect to the server (meant to happen continuously):
     void receiveConnections()
     {
         Socket socket = null;
@@ -58,27 +66,91 @@ class Client_Manager
                     in.read(array2);
                     String password = Arrays.toString(array2);
 
+                    String address = socket.getRemoteSocketAddress().toString();
+
                     // Check if this new client is allowed to connect:
+
+                    // Check for username in banNameList:
+                    ArrayList<String> banList = owner.banNameList;
+                    boolean foundNameBan = false;
+                    for(String name : banList)
+                    {
+                        if(name.equals(username))
+                        {
+                            foundNameBan = true;
+                            break;
+                        }
+                    }
+
+                    if(!foundNameBan)
+                    {
+                        // Check for IP address in banAddressList:
+                        banList = owner.banAddressList;
+                        boolean foundAddressBan = false;
+                        for(String ip : banList)
+                        {
+                            if(ip.equals(address))
+                            {
+                                foundAddressBan = true;
+                                break;
+                            }
+                        }
+                    }
+
                     if(true) // TODO Add some conditions!
                     {
-                        Client newClient = new Client(socket, this);
+                        Client newClient = new Client(socket, username, this);
                         clientList.add(newClient);
+                        //newClient.start();
                     }
                 }
-
-
             }
         }
         catch(IOException e)
         {
             System.err.println("SERVER ERROR: " + e + " - Could not accept socket.");
         }
-
-
     }
 
+    // Disconnects all connected Clients (with the message that the server is closing):
     void terminateConnections()
     {
 
+    }
+
+    // Kick (disconnect) a specific client (by their IP Address):
+    boolean kickClientIP(String ip)
+    {
+        return false; // TODO Add the kick ip code
+    }
+
+    // Kick (disconnect) a specific client (by their Username):
+    boolean kickClientName(String name)
+    {
+        return false; // TODO Add the kick username code
+    }
+
+    // Ban a specific client (by their IP Address):
+    boolean banClientIP(String ip)
+    {
+        return false; // TODO Add the ban ip code
+    }
+
+    // Ban a specific client (by their Username):
+    boolean banClientName(String name)
+    {
+        return false; // TODO Add the ban username code
+    }
+
+    // Pardon (unban) a specific client (by their IP Address):
+    boolean pardonClientIP(String ip)
+    {
+        return false; // TODO Add the pardon ip code
+    }
+
+    // Pardon (unban) a specific client (by their Username):
+    boolean pardonClientName(String name)
+    {
+        return false; // TODO Add the pardon username code
     }
 }
