@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class Client {
+public class Client implements Runnable {
     private Client_Manager owner;
     public String username;
     public String address;
