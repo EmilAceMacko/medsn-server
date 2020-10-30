@@ -38,4 +38,8 @@ public class MEDSN_Server implements Constants {
     public int getChatLength () {
         return chatLength;
     }
+
+    public void handleChatString (String chat) {
+
+    }
 }
