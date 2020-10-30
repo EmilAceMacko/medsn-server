@@ -10,7 +10,7 @@ public class MEDSN_Server implements Constants {
     private int chatLength;
 
     public ArrayList<String> banNameList = new ArrayList<String>();
-    public  ArrayList<String> banAdressList = new ArrayList<String>();
+    public  ArrayList<String> banAddressList = new ArrayList<String>();
 
 
     public static void main(String[] args) {}
@@ -40,6 +40,11 @@ public class MEDSN_Server implements Constants {
     }
 
     public void handleChatString (String chat) {
-
     }
+
+    public void handleServerString (String chat, Client user) {
+    }
+
+
+
 }
