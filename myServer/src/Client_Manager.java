@@ -9,19 +9,19 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-class Client_Manager
+public class Client_Manager
 {
     public MEDSN_Server owner;
     private int port = 8000;
     private ServerSocket serverSocket;
     private ArrayList<Client> clientList;
-    private ArrayList<Runnable> threadList;
+    //private ArrayList<Runnable> threadList;
 
     Client_Manager(MEDSN_Server _owner)
     {
         owner = _owner;
         clientList = new ArrayList<>();
-        threadList = new ArrayList<>();
+        //threadList = new ArrayList<>();
         try
         {
             serverSocket = new ServerSocket(port); // Create the server socket.
@@ -33,14 +33,72 @@ class Client_Manager
         }
     }
 
-    // Handle input strings from the connected Clients:
-    void handleClientInput(String msg, Client client)
+    // Handle input strings from the connected Clients to be sent to the entire server:
+    public void handleClientInput(String msg, Client client)
     {
-
+        owner.handleServerString(msg, client);
     }
 
-    // Check and handle any Clients that request to connect to the server (meant to happen continuously):
-    void receiveConnections()
+    // Handle notifying the server that the given Client has joined the server:
+    public void handleClientJoin(Client client)
+    {
+        // The "user has joined" message:
+        String joinMsg = client.username + " has joined the server.";
+        // Broadcast the notification to all Clients except the Client which the notification is about:
+        for(Client c : clientList)
+        {
+            if(!c.equals(client)) broadcast(joinMsg, c);
+        }
+    }
+
+    // Handle notifying the server that the given Client has left the server:
+    public void handleClientLeave(Client client)
+    {
+        // The "user has left" message:
+        String leaveMsg = client.username + " has left the server.";
+        // Broadcast the notification to all Clients except the Client which the notification is about:
+        for(Client c : clientList)
+        {
+            if(!c.equals(client)) broadcast(leaveMsg, c);
+        }
+    }
+
+    // Broadcast a string to all connected Clients on the server:
+    public void broadcast(String msg)
+    {
+        // Loop through Client List:
+        for(Client c : clientList)
+        {
+            broadcast(msg, c);
+        }
+    }
+
+    // Broadcast a string to a specific connected Client:
+    public void broadcast(String msg, Client client)
+    {
+        byte[] array = msg.getBytes();
+        int length = array.length;
+
+        client.out.writeShort(owner.NET_SERVER_CHAT);
+        client.out.writeInt(length);
+        client.out.write(array);
+    }
+
+    // Disconnect the given Client from the server: (Only run if the Client itself initiated a disconnect!)
+    public void disconnectClient(Client client)
+    {
+        // Broadcast to the rest of the server that this Client has left the server.
+        handleClientLeave(client);
+        // Stop the IO thread process in the Client:
+        client.setListening(false);
+        // Remove the Client from the Client List:
+        clientList.remove(client);
+        // Remove the Thread from the Thread List:
+        //threadList.clear();
+    }
+
+    // Check and handle any Clients that request to connect to the server: (Meant to happen continuously!)
+    public void receiveConnections()
     {
         Socket socket = null;
         try
@@ -144,10 +202,12 @@ class Client_Manager
                             clientList.add(newClient);
                             // Create a new Client Thread, add it to the Thread List, and start its process:
                             Thread clientThread = new Thread(newClient);
-                            threadList.add(clientThread);
+                            //threadList.add(clientThread);
                             clientThread.start();
                             // Report back to the Client that the connection was accepted:
                             out.writeShort(owner.NET_SERVER_JOIN_ACCEPT);
+                            // Notify the server that the Client has joined:
+                            handleClientJoin(newClient);
                         }
                     }
                     else // Server is full, no room for the new client:
@@ -165,40 +225,48 @@ class Client_Manager
     }
 
     // Disconnects all connected Clients (with the message that the server is closing):
-    void terminateConnections()
+    public void terminateConnections()
     {
+        // Loop through Client List:
         for(Client c : clientList)
         {
-
+            // Send the "server quit" message with the proper identifier:
+            c.out.writeShort(owner.NET_SERVER_QUIT);
+            // Stop the IO thread process in the Client:
+            c.setListening(false);
         }
+
+        // Clear the Client List and Thread List:
+        clientList.clear();
+        //threadList.clear();
     }
 
-    // Kick (disconnect) a specific client (by their IP Address):
-    boolean kickClientIP(String ip)
+    // Kick (disconnect) a specific client (by their IP Address): (Returns false if Client is not found.)
+    public boolean kickClientIP(String ip)
     {
         return false; // TODO Add the kick ip code!
     }
 
-    // Kick (disconnect) a specific client (by their Username):
-    boolean kickClientName(String name)
+    // Kick (disconnect) a specific client (by their Username): (Returns false if Client is not found.)
+    public boolean kickClientName(String name)
     {
         return false; // TODO Add the kick username code!
     }
 
     // Ban a specific client (by their IP Address):
-    boolean banClientIP(String ip)
+    public boolean banClientIP(String ip)
     {
         return false; // TODO Add the ban ip code!
     }
 
     // Ban a specific client (by their Username):
-    boolean banClientName(String name)
+    public boolean banClientName(String name)
     {
         return false; // TODO Add the ban username code!
     }
 
     // Pardon (unban) a specific client (by their IP Address):
-    boolean pardonClientIP(String ip)
+    public boolean pardonClientIP(String ip)
     {
         return false; // TODO Add the pardon ip code!
     }
@@ -209,37 +277,37 @@ class Client_Manager
         return false; // TODO Add the pardon username code!
     }
 
-    // Get a specific Client's IP Address by either providing a name or a reference to the Client instance.
-    String getClientIP(String name)
+    // Get a specific Client's IP Address by either providing a name or a reference to the Client instance: (Returns null if Client is not found.)
+    public String getClientIP(String name)
     {
         for(Client c : clientList)
         {
             if(c.username.equals(name)) return getClientIP(c);
         }
-        return null; // Return null if no Client with the given username was found.
+        return null;
     }
-    String getClientIP(Client client)
+    public String getClientIP(Client client)
     {
         return client.clientSocket.getRemoteSocketAddress().toString();
     }
 
-    // Get a reference to a specific Client with the given IP Address:
-    Client findClientWithIP(String ip)
+    // Get a reference to a specific Client with the given IP Address: (Returns null if Client is not found.)
+    public Client findClientWithIP(String ip)
     {
         for(Client c : clientList)
         {
             if(getClientIP(c).equals(ip)) return c;
         }
-        return null; // Return null if no Client with the given IP Address was found.
+        return null;
     }
 
-    // Get a reference to a specific Client with the given username:
-    Client findClientWithName(String name)
+    // Get a reference to a specific Client with the given username: (Returns null if Client is not found.)
+    public Client findClientWithName(String name)
     {
         for(Client c : clientList)
         {
             if(c.username.equals(name)) return c;
         }
-        return null; // Return null if no Client with the given username was found.
+        return null;
     }
 }
