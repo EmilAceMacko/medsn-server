@@ -29,6 +29,7 @@ public interface Constants
     short NET_SERVER_JOIN_DENY_BANNED_IP = 204;
     short NET_SERVER_JOIN_DENY_NO_ROOM = 205;
     short NET_SERVER_JOIN_DENY_DUPLICATE = 206;
+    short NET_SERVER_JOIN_DENY_KICK = 207;
     short NET_SERVER_CHAT = 210;
     short NET_SERVER_QUIT = 220;
 }
