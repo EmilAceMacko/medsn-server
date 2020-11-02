@@ -4,10 +4,12 @@ import java.util.Scanner;
 
 public class Chat {
     MEDSN_Server owner;
-    Thread scanThread;
+    ScanThread scanThread;
 
     public Chat (MEDSN_Server owner) {
-
+        this.owner = owner;
+        scanThread = new ScanThread(this);
+        scanThread.start();
     }
 
     public void message (String msg) {
@@ -22,5 +24,7 @@ public class Chat {
         System.out.println(msg);
     }
 
-
+    public void stopScanner () {
+        scanThread.setScanning(false);
+    }
 }

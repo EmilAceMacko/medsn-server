@@ -2,10 +2,10 @@ package src;
 
 import java.util.Scanner;
 
-public class ScanThread {
+public class ScanThread extends Thread {
     private Chat owner;
     private String input;
-    public Boolean scanning = true;
+    public boolean scanning = true;
 
     private Scanner scan = new Scanner(System.in);
 
@@ -23,7 +23,10 @@ public class ScanThread {
         }
     }
 
-    public void writeChat (String msg) {
-        System.out.println(msg);
+    public void setScanning (boolean scanning) {
+        this.scanning = scanning;
     }
+
+
+
 }
