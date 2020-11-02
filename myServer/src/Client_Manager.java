@@ -160,7 +160,7 @@ public class Client_Manager
                         // Check if the Client is already connected:
                         for(Client c : clientList)
                         {
-                            if(getClientIP(c).equals(address))
+                            if(c.address.equals(address))
                             {
                                 clientAlreadyConnected = true;
                                 break;
@@ -375,26 +375,12 @@ public class Client_Manager
         return found;
     }
 
-    // Get a specific Client's IP Address by either providing a name or a direct object reference: (Returns null if Client is not found.)
-    public String getClientIP(String name)
-    {
-        for(Client c : clientList)
-        {
-            if(c.username.equals(name)) return getClientIP(c);
-        }
-        return null;
-    }
-    public String getClientIP(Client client)
-    {
-        return client.address;
-    }
-
     // Get a reference to a specific Client with the given IP Address: (Returns null if Client is not found.)
     public Client findClientWithIP(String ip)
     {
         for(Client c : clientList)
         {
-            if(getClientIP(c).equals(ip)) return c;
+            if(c.address.equals(ip)) return c;
         }
         return null;
     }
