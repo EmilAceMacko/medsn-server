@@ -40,7 +40,7 @@ public class Client_Manager
     }
 
     // Handle notifying the server that the given Client has joined the server:
-    public void handleClientJoin(Client client)
+    public void handleClientJoin(Client client) throws IOException
     {
         // The "user has joined" message:
         String joinMsg = client.username + " has joined the server.";
@@ -51,20 +51,8 @@ public class Client_Manager
         }
     }
 
-    // Handle notifying the server that the given Client has left the server:
-    public void handleClientLeave(Client client)
-    {
-        // The "user has left" message:
-        String leaveMsg = client.username + " has left the server.";
-        // Broadcast the notification to all Clients except the Client which the notification is about:
-        for(Client c : clientList)
-        {
-            if(!c.equals(client)) broadcast(leaveMsg, c);
-        }
-    }
-
     // Broadcast a string to all connected Clients on the server:
-    public void broadcast(String msg)
+    public void broadcast(String msg) throws IOException
     {
         // Loop through Client List:
         for(Client c : clientList)
@@ -74,7 +62,7 @@ public class Client_Manager
     }
 
     // Broadcast a string to a specific connected Client:
-    public void broadcast(String msg, Client client)
+    public void broadcast(String msg, Client client) throws IOException
     {
         byte[] array = msg.getBytes();
         int length = array.length;
@@ -84,17 +72,48 @@ public class Client_Manager
         client.out.write(array);
     }
 
-    // Disconnect the given Client from the server: (Only run if the Client itself initiated a disconnect!)
-    public void disconnectClient(Client client)
+    // Disconnect the given Client from the server: (Does NOT notify Client that it has been disconnected!)
+    public void disconnectClient(Client client) throws IOException
     {
-        // Broadcast to the rest of the server that this Client has left the server.
-        handleClientLeave(client);
+        disconnectClient(client, (short)0);
+    }
+    public void disconnectClient(Client client, short cond) throws IOException
+    {
+        String leaveMsg;
+        // Notify the Clients that a Client has left the server (for some reason)
+        // Set "user has left" message and broadcast to Client the reason for disconnect: (Switch-case doesn't work here because Java)
+        if(cond == owner.NET_SERVER_JOIN_DENY_KICK) // Client was kicked:
+        {
+            leaveMsg = client.username + " has been kicked from the server.";
+            client.out.writeShort(owner.NET_SERVER_JOIN_DENY_KICK);
+        }
+        else if(cond == owner.NET_SERVER_JOIN_DENY_BANNED_IP) // Client was banned (IP):
+        {
+            leaveMsg = client.username + " has been banned from the server.";
+            client.out.writeShort(owner.NET_SERVER_JOIN_DENY_BANNED_IP);
+        }
+        else if(cond == owner.NET_SERVER_JOIN_DENY_BANNED_NAME) // Client was banned (username):
+        {
+            leaveMsg = client.username + " has been banned from the server.";
+            client.out.writeShort(owner.NET_SERVER_JOIN_DENY_BANNED_NAME);
+        }
+        else // Client left on its own:
+        {
+            leaveMsg = client.username + " has left the server.";
+        }
+
         // Stop the IO thread process in the Client:
         client.setListening(false);
         // Remove the Client from the Client List:
         clientList.remove(client);
         // Remove the Thread from the Thread List:
         //threadList.clear();
+
+        // Broadcast the notification to all Clients except the Client with which the notification is about:
+        for(Client c : clientList)
+        {
+            if(!c.equals(client)) broadcast(leaveMsg, c);
+        }
     }
 
     // Check and handle any Clients that request to connect to the server: (Meant to happen continuously!)
@@ -225,7 +244,7 @@ public class Client_Manager
     }
 
     // Disconnects all connected Clients (with the message that the server is closing):
-    public void terminateConnections()
+    public void terminateConnections() throws IOException
     {
         // Loop through Client List:
         for(Client c : clientList)
@@ -244,40 +263,119 @@ public class Client_Manager
     // Kick (disconnect) a specific client (by their IP Address): (Returns false if Client is not found.)
     public boolean kickClientIP(String ip)
     {
-        return false; // TODO Add the kick ip code!
+        boolean found = false;
+        Client client = findClientWithIP(ip);
+        if(client != null)
+        {
+            kickClient(client);
+            found = true;
+        }
+        return found;
     }
 
     // Kick (disconnect) a specific client (by their Username): (Returns false if Client is not found.)
     public boolean kickClientName(String name)
     {
-        return false; // TODO Add the kick username code!
+        boolean found = false;
+        Client client = findClientWithName(name);
+        if(client != null)
+        {
+            kickClient(client);
+            found = true;
+        }
+        return found;
     }
 
-    // Ban a specific client (by their IP Address):
+    // Kick (disconnect) a specific client:
+    public void kickClient(Client client)
+    {
+        try
+        {
+            disconnectClient(client, owner.NET_SERVER_JOIN_DENY_KICK);
+        }
+        catch(IOException e)
+        {
+            System.err.println("Could not kick client with username " + client.username + " and IP " + client.address);
+        }
+    }
+
+    // Ban a specific client (by their IP Address): (Returns false if the Client was not connected when banned.)
     public boolean banClientIP(String ip)
     {
-        return false; // TODO Add the ban ip code!
+        // Add the IP Address to the ban list:
+        owner.banAddressList.add(ip);
+        // Find and disconnect the client:
+        boolean found = false;
+        Client client = findClientWithIP(ip);
+        if(client != null)
+        {
+            try
+            {
+                disconnectClient(client, owner.NET_SERVER_JOIN_DENY_BANNED_IP);
+                found = true; // The client was successfully disconnected when banned.
+            }
+            catch(IOException e)
+            {
+                System.err.println("Could not disconnect client with username " + client.username + " and IP " + client.address + " when IP-banned.");
+            }
+        }
+        return found;
     }
 
-    // Ban a specific client (by their Username):
+    // Ban a specific client (by their Username): (Returns false if the Client was not connected when banned.)
     public boolean banClientName(String name)
     {
-        return false; // TODO Add the ban username code!
+        // Add the IP Address to the ban list:
+        owner.banNameList.add(name);
+        // Find and disconnect the client:
+        boolean found = false;
+        Client client = findClientWithIP(name);
+        if(client != null)
+        {
+            try
+            {
+                disconnectClient(client, owner.NET_SERVER_JOIN_DENY_BANNED_NAME);
+                found = true; // The client was successfully disconnected when banned.
+            }
+            catch(IOException e)
+            {
+                System.err.println("Could not disconnect client with username " + client.username + " and IP " + client.address + " when name-banned.");
+            }
+        }
+        return found;
     }
 
-    // Pardon (unban) a specific client (by their IP Address):
+    // Pardon (unban) a specific client (by their IP Address): (Returns false if Client is not found.)
     public boolean pardonClientIP(String ip)
     {
-        return false; // TODO Add the pardon ip code!
+        boolean found = false;
+        for(String s : owner.banAddressList)
+        {
+            if(s.equals(ip))
+            {
+                owner.banAddressList.remove(s);
+                found = true;
+            }
+        }
+        return found;
     }
 
-    // Pardon (unban) a specific client (by their Username):
+    // Pardon (unban) a specific client (by their Username): (Returns false if Client is not found.)
     boolean pardonClientName(String name)
     {
-        return false; // TODO Add the pardon username code!
+        boolean found = false;
+        for(String s : owner.banNameList)
+        {
+            if(s.equals(name))
+            {
+                owner.banNameList.remove(s);
+                found = true;
+            }
+        }
+        return found;
     }
 
-    // Get a specific Client's IP Address by either providing a name or a reference to the Client instance: (Returns null if Client is not found.)
+    // Get a specific Client's IP Address by either providing a name or a direct object reference: (Returns null if Client is not found.)
     public String getClientIP(String name)
     {
         for(Client c : clientList)
@@ -288,7 +386,7 @@ public class Client_Manager
     }
     public String getClientIP(Client client)
     {
-        return client.clientSocket.getRemoteSocketAddress().toString();
+        return client.address;
     }
 
     // Get a reference to a specific Client with the given IP Address: (Returns null if Client is not found.)
