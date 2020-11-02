@@ -34,15 +34,15 @@ public class Client implements Runnable {
     //Reads message written by client
     public void run() {
         try {
-        while (listening) {
-            short input = in.readShort();
-            if (input == owner.owner.NET_CLIENT_CHAT) {
-                byte[] array = new byte[in.readInt()];
-                in.read(array);
-                String message = Arrays.toString(array);
-                owner.handleClientInput(message, this);
+            while (listening) {
+                short input = in.readShort();
+                if (input == MEDSN_Server.NET_CLIENT_CHAT) {
+                    byte[] array = new byte[in.readInt()];
+                    in.read(array);
+                    String message = Arrays.toString(array);
+                    owner.handleClientInput(message, this);
+                }
             }
-        }
         }
         catch (IOException e) {
             System.err.println("Client could not read short");

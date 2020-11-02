@@ -11,15 +11,15 @@ import java.util.Arrays;
 
 public class Client_Manager
 {
-    public MEDSN_Server owner;
+    //public MEDSN_Server owner;
     private int port = 8000;
     private ServerSocket serverSocket;
     private ArrayList<Client> clientList;
     //private ArrayList<Runnable> threadList;
 
-    Client_Manager(MEDSN_Server _owner)
+    Client_Manager()
     {
-        owner = _owner;
+        //owner = _owner;
         clientList = new ArrayList<>();
         //threadList = new ArrayList<>();
         try
@@ -36,11 +36,11 @@ public class Client_Manager
     // Handle input strings from the connected Clients to be sent to the entire server:
     public void handleClientInput(String msg, Client client)
     {
-        owner.handleServerString(msg, client);
+        MEDSN_Server.handleServerString(msg, client);
     }
 
     // Handle notifying the server that the given Client has joined the server:
-    public void handleClientJoin(Client client) throws IOException
+    public void handleClientJoin(Client client)
     {
         // The "user has joined" message:
         String joinMsg = client.username + " has joined the server.";
@@ -52,7 +52,7 @@ public class Client_Manager
     }
 
     // Broadcast a string to all connected Clients on the server:
-    public void broadcast(String msg) throws IOException
+    public void broadcast(String msg)
     {
         // Loop through Client List:
         for(Client c : clientList)
@@ -62,14 +62,21 @@ public class Client_Manager
     }
 
     // Broadcast a string to a specific connected Client:
-    public void broadcast(String msg, Client client) throws IOException
+    public void broadcast(String msg, Client client)
     {
-        byte[] array = msg.getBytes();
-        int length = array.length;
+        try
+        {
+            byte[] array = msg.getBytes();
+            int length = array.length;
 
-        client.out.writeShort(owner.NET_SERVER_CHAT);
-        client.out.writeInt(length);
-        client.out.write(array);
+            client.out.writeShort(MEDSN_Server.NET_SERVER_CHAT);
+            client.out.writeInt(length);
+            client.out.write(array);
+        }
+        catch(IOException e)
+        {
+            System.err.println(e + " - could not broadcast message.");
+        }
     }
 
     // Disconnect the given Client from the server: (Does NOT notify Client that it has been disconnected!)
@@ -82,20 +89,20 @@ public class Client_Manager
         String leaveMsg;
         // Notify the Clients that a Client has left the server (for some reason)
         // Set "user has left" message and broadcast to Client the reason for disconnect: (Switch-case doesn't work here because Java)
-        if(cond == owner.NET_SERVER_JOIN_DENY_KICK) // Client was kicked:
+        if(cond == MEDSN_Server.NET_SERVER_JOIN_DENY_KICK) // Client was kicked:
         {
             leaveMsg = client.username + " has been kicked from the server.";
-            client.out.writeShort(owner.NET_SERVER_JOIN_DENY_KICK);
+            client.out.writeShort(MEDSN_Server.NET_SERVER_JOIN_DENY_KICK);
         }
-        else if(cond == owner.NET_SERVER_JOIN_DENY_BANNED_IP) // Client was banned (IP):
+        else if(cond == MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_IP) // Client was banned (IP):
         {
             leaveMsg = client.username + " has been banned from the server.";
-            client.out.writeShort(owner.NET_SERVER_JOIN_DENY_BANNED_IP);
+            client.out.writeShort(MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_IP);
         }
-        else if(cond == owner.NET_SERVER_JOIN_DENY_BANNED_NAME) // Client was banned (username):
+        else if(cond == MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_NAME) // Client was banned (username):
         {
             leaveMsg = client.username + " has been banned from the server.";
-            client.out.writeShort(owner.NET_SERVER_JOIN_DENY_BANNED_NAME);
+            client.out.writeShort(MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_NAME);
         }
         else // Client left on its own:
         {
@@ -132,7 +139,7 @@ public class Client_Manager
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
                 // Check if this new client is attempting to establish a connection:
-                if(in.readShort() == owner.NET_CLIENT_JOIN_REQUEST)
+                if(in.readShort() == MEDSN_Server.NET_CLIENT_JOIN_REQUEST)
                 {
                     // ---------------- Get client "credentials":
                     byte[] array = new byte[in.readInt()];
@@ -153,10 +160,8 @@ public class Client_Manager
                     boolean correctAdminPassword = false;
 
                     // Check if there is room on the server.
-                    if(clientList.size() >= owner.getMaxClients())
+                    if(clientList.size() < MEDSN_Server.getMaxClients())
                     {
-                        roomForClient = false;
-
                         // Check if the Client is already connected:
                         for(Client c : clientList)
                         {
@@ -168,8 +173,7 @@ public class Client_Manager
                         }
 
                         // Check for username in Ban Lists:
-                        ArrayList<String> banList = owner.banNameList;
-                        for(String name : banList)
+                        for(String name : MEDSN_Server.banNameList)
                         {
                             if(name.equals(username))
                             {
@@ -181,8 +185,7 @@ public class Client_Manager
                         if(!foundNameBan) // If the name was already found, don't check if the IP is also banned.
                         {
                             // Check for IP address in banAddressList:
-                            banList = owner.banAddressList;
-                            for(String ip : banList)
+                            for(String ip : MEDSN_Server.banAddressList)
                             {
                                 if(ip.equals(address))
                                 {
@@ -192,6 +195,12 @@ public class Client_Manager
                             }
                         }
                     }
+                    else roomForClient = false; // No room.
+
+
+                    // Check if admin password is correct:
+                    if(password.equals(MEDSN_Server.adminPassword)) correctAdminPassword = true;
+
 
                     // Evaluate join conditions:
                     if(roomForClient) // If there's room for the Client:
@@ -199,17 +208,17 @@ public class Client_Manager
                         if(clientAlreadyConnected)
                         {
                             // Report back to the Client that the connection was denied because their IP Address was already connected.
-                            out.writeShort(owner.NET_SERVER_JOIN_DENY_DUPLICATE);
+                            out.writeShort(MEDSN_Server.NET_SERVER_JOIN_DENY_DUPLICATE);
                         }
                         else if(foundNameBan) // If Client's username has been banned:
                         {
                             // Report back to the Client that the connection was denied because their username is banned.
-                            out.writeShort(owner.NET_SERVER_JOIN_DENY_BANNED_NAME);
+                            out.writeShort(MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_NAME);
                         }
                         else if(foundAddressBan) // If Client's IP address has been banned:
                         {
                             // Report back to the Client that the connection was denied because their IP Address is banned.
-                            out.writeShort(owner.NET_SERVER_JOIN_DENY_BANNED_IP);
+                            out.writeShort(MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_IP);
                         }
                         else // Client is allowed to connect:
                         {
@@ -224,7 +233,7 @@ public class Client_Manager
                             //threadList.add(clientThread);
                             clientThread.start();
                             // Report back to the Client that the connection was accepted:
-                            out.writeShort(owner.NET_SERVER_JOIN_ACCEPT);
+                            out.writeShort(MEDSN_Server.NET_SERVER_JOIN_ACCEPT);
                             // Notify the server that the Client has joined:
                             handleClientJoin(newClient);
                         }
@@ -232,7 +241,7 @@ public class Client_Manager
                     else // Server is full, no room for the new client:
                     {
                         // Report back to the Client that the connection was denied because the server is full.
-                        out.writeShort(owner.NET_SERVER_JOIN_DENY_NO_ROOM);
+                        out.writeShort(MEDSN_Server.NET_SERVER_JOIN_DENY_NO_ROOM);
                     }
                 }
             }
@@ -244,17 +253,23 @@ public class Client_Manager
     }
 
     // Disconnects all connected Clients (with the message that the server is closing):
-    public void terminateConnections() throws IOException
+    public void terminateConnections()
     {
-        // Loop through Client List:
-        for(Client c : clientList)
+        try
         {
-            // Send the "server quit" message with the proper identifier:
-            c.out.writeShort(owner.NET_SERVER_QUIT);
-            // Stop the IO thread process in the Client:
-            c.setListening(false);
+            // Loop through Client List:
+            for (Client c : clientList)
+            {
+                // Send the "server quit" message with the proper identifier:
+                c.out.writeShort(MEDSN_Server.NET_SERVER_QUIT);
+                // Stop the IO thread process in the Client:
+                c.setListening(false);
+            }
         }
-
+        catch(IOException e)
+        {
+            System.err.println(e + " - Could not terminate connections.");
+        }
         // Clear the Client List and Thread List:
         clientList.clear();
         //threadList.clear();
@@ -291,7 +306,7 @@ public class Client_Manager
     {
         try
         {
-            disconnectClient(client, owner.NET_SERVER_JOIN_DENY_KICK);
+            disconnectClient(client, MEDSN_Server.NET_SERVER_JOIN_DENY_KICK);
         }
         catch(IOException e)
         {
@@ -303,7 +318,7 @@ public class Client_Manager
     public boolean banClientIP(String ip)
     {
         // Add the IP Address to the ban list:
-        owner.banAddressList.add(ip);
+        MEDSN_Server.banAddressList.add(ip);
         // Find and disconnect the client:
         boolean found = false;
         Client client = findClientWithIP(ip);
@@ -311,7 +326,7 @@ public class Client_Manager
         {
             try
             {
-                disconnectClient(client, owner.NET_SERVER_JOIN_DENY_BANNED_IP);
+                disconnectClient(client, MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_IP);
                 found = true; // The client was successfully disconnected when banned.
             }
             catch(IOException e)
@@ -326,7 +341,7 @@ public class Client_Manager
     public boolean banClientName(String name)
     {
         // Add the IP Address to the ban list:
-        owner.banNameList.add(name);
+        MEDSN_Server.banNameList.add(name);
         // Find and disconnect the client:
         boolean found = false;
         Client client = findClientWithIP(name);
@@ -334,7 +349,7 @@ public class Client_Manager
         {
             try
             {
-                disconnectClient(client, owner.NET_SERVER_JOIN_DENY_BANNED_NAME);
+                disconnectClient(client, MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_NAME);
                 found = true; // The client was successfully disconnected when banned.
             }
             catch(IOException e)
@@ -349,11 +364,11 @@ public class Client_Manager
     public boolean pardonClientIP(String ip)
     {
         boolean found = false;
-        for(String s : owner.banAddressList)
+        for(String s : MEDSN_Server.banAddressList)
         {
             if(s.equals(ip))
             {
-                owner.banAddressList.remove(s);
+                MEDSN_Server.banAddressList.remove(s);
                 found = true;
             }
         }
@@ -364,11 +379,11 @@ public class Client_Manager
     boolean pardonClientName(String name)
     {
         boolean found = false;
-        for(String s : owner.banNameList)
+        for(String s : MEDSN_Server.banNameList)
         {
             if(s.equals(name))
             {
-                owner.banNameList.remove(s);
+                MEDSN_Server.banNameList.remove(s);
                 found = true;
             }
         }
