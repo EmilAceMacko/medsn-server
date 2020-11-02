@@ -140,12 +140,16 @@ public class MEDSN_Server implements Constants {
     }
 
     public static void handleServerString (String chatStr, Client client) {
-        // Get privileges for this client
+        // Get privileges for this Client
         boolean isAdmin = false;
         if(client == null || client.isAdmin())
         {
             isAdmin = true;
         }
+
+        // Get the username of the calling Client:
+        String name = "NULL";
+        if(client != null) name = client.username;
 
         boolean broadcastToAll = false;
         // Check if string is command:
@@ -157,16 +161,50 @@ public class MEDSN_Server implements Constants {
             {
                 case("/serverhelp"): // List server-side commands:
                 {
-
+                    StringBuilder list = new StringBuilder();
+                    list.append("Here's all the server commands:\n" +
+                                "/serverhelp - Display this list of server commands.\n" +
+                                "/listclients - Get a list of all the currently connected clients.\n" +
+                                "/say <expression> - Express a feeling or state of being.");
+                    if(isAdmin)
+                    {
+                        list.append("\n" + "Admin Commands:\n" +
+                                    "/kickname <username> - Kick a player by their username.\n" +
+                                    "/kickip <ip> - Kick a player by their IP address.\n" +
+                                    "/banname <username> - Ban a player by their username.\n" +
+                                    "/banip <ip> - Ban a player by their IP address.\n" +
+                                    "/pardonname <username> - Pardon (unban) a player by their username.\n" +
+                                    "/pardonip <ip> - Pardon (unban) a player by their IP address.\n" +
+                                    "/clientip <username> - Retrieve the IP address of a client by their username.");
+                    }
+                    outputLocal(client, list.toString(),
+                            "Server: " + name + " used /serverhelp.");
                     break;
                 }
                 case("/listclients"): // List all client names on the server:
                 {
-
+                    StringBuilder list = new StringBuilder();
+                    for(Client c : clientMgr.clientList)
+                    {
+                        list.append("\n").append(c.username);
+                    }
+                    list.deleteCharAt(0); // Delete the extra new-line at the start.
+                    outputLocal(client, list.toString(), "Server: " + name + " used /listclients.");
                     break;
                 }
-                case("/say"):
+                case("/say"): // Express a feeling or state of being:
                 {
+                    if(param.length > 1)
+                    {
+                        String msg = chatStr.split("\\s+", 2)[1];
+                        outputGlobal(name + " " + msg);
+                    }
+                    else // Not enough parameters:
+                    {
+                        outputLocal(client,
+                                "No valid username was given. /say <expression-goes-here>",
+                                "Server: " + name + " used /say unsuccessfully.");
+                    }
                     break;
                 }
                 case("/clientip"):
@@ -175,13 +213,30 @@ public class MEDSN_Server implements Constants {
                     {
                         if(param.length > 1)
                         {
-
+                            // Get the IP address of the Client by the given username.
+                            String cName = param[1];
+                            Client c = clientMgr.findClientWithName(cName);
+                            if(c != null)
+                            {
+                                String ip = c.address;
+                                outputLocal(client,
+                                        "IP: " + ip,
+                                        "Server: " + name + " used /clientip on " + cName + " successfully.");
+                            }
+                            else // No Client by that username was found:
+                            {
+                                String msg = "No Client by the username " + name + " was found.";
+                                outputLocal(client,
+                                        "No Client by the username " + name + " was found.",
+                                        "Server: " + name + " used /clientip on " + cName + " (not found).");
+                            }
                         }
-                        else
+                        else // Not enough parameters:
                         {
-                            String err = "";
-                            if(client == null) chat.writeChat(err);
-                            else clientMgr.broadcast(err, client);
+                            // Broadcast error message back to caller:
+                            outputLocal(client,
+                                    "No valid username was given. /clientip <username>",
+                                    "Server: " + name + " used /clientip unsuccessfully.");
                         }
                     }
                     break;
@@ -240,13 +295,17 @@ public class MEDSN_Server implements Constants {
         }
     }
 
-    // Sends a string message to either a specific client or the server chat.
-    public static void outputLocal(String msg, Client client)
+    // Sends a string message either to a specific client (with a server log) or directly to the server chat.
+    public static void outputLocal(Client client, String msg, String log)
     {
         if(client == null) chat.writeChat(msg);
-        else clientMgr.broadcast(msg, client);
+        else
+        {
+            chat.writeChat(log);
+            clientMgr.broadcast(msg, client);
+        }
     }
-    // Sends a string message to both
+    // Sends a string message to all clients and the server chat.
     public static void outputGlobal(String msg)
     {
         chat.writeChat(msg);

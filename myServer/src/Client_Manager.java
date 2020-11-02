@@ -14,7 +14,7 @@ public class Client_Manager
     //public MEDSN_Server owner;
     private int port = 8000;
     private ServerSocket serverSocket;
-    private ArrayList<Client> clientList;
+    public ArrayList<Client> clientList;
     //private ArrayList<Runnable> threadList;
 
     Client_Manager()
@@ -122,6 +122,7 @@ public class Client_Manager
             if(!c.equals(client)) broadcast(leaveMsg, c);
         }
     }
+
 
     // Check and handle any Clients that request to connect to the server: (Meant to happen continuously!)
     public void receiveConnections()
