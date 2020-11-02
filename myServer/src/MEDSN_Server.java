@@ -8,6 +8,7 @@ public class MEDSN_Server implements Constants {
     private Client_Manager clientMgr;
     private int maxClients;
     private int chatLength;
+    public String serverPassword;
 
     //Declaring the ArrayLists that will be used for our ban lists
     public ArrayList<String> banNameList = new ArrayList<String>();
