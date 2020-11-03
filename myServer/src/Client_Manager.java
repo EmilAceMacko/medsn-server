@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -13,7 +14,7 @@ public class Client_Manager
 {
     //public MEDSN_Server owner;
     private int port = 8000;
-    private ServerSocket serverSocket;
+    public ServerSocket serverSocket;
     public ArrayList<Client> clientList;
     //private ArrayList<Runnable> threadList;
 
@@ -44,10 +45,11 @@ public class Client_Manager
     {
         // The "user has joined" message:
         String joinMsg = client.username + " has joined the server.";
+        MEDSN_Server.chat.writeChat(joinMsg);
         // Broadcast the notification to all Clients except the Client which the notification is about:
         for(Client c : clientList)
         {
-            if(!c.equals(client)) broadcast(joinMsg, c);
+            broadcast(joinMsg, c);
         }
     }
 
@@ -69,9 +71,11 @@ public class Client_Manager
             byte[] array = msg.getBytes();
             int length = array.length;
 
+            client.out.flush();
             client.out.writeShort(MEDSN_Server.NET_SERVER_CHAT);
             client.out.writeInt(length);
             client.out.write(array);
+            client.out.flush();
         }
         catch(IOException e)
         {
@@ -89,6 +93,7 @@ public class Client_Manager
         String leaveMsg;
         // Notify the Clients that a Client has left the server (for some reason)
         // Set "user has left" message and broadcast to Client the reason for disconnect: (Switch-case doesn't work here because Java)
+        client.out.flush();
         if(cond == MEDSN_Server.NET_SERVER_JOIN_DENY_KICK) // Client was kicked:
         {
             leaveMsg = client.username + " has been kicked from the server.";
@@ -108,6 +113,7 @@ public class Client_Manager
         {
             leaveMsg = client.username + " has left the server.";
         }
+        client.out.flush();
 
         // Stop the IO thread process in the Client:
         client.setListening(false);
@@ -121,6 +127,8 @@ public class Client_Manager
         {
             if(!c.equals(client)) broadcast(leaveMsg, c);
         }
+        // Output notification to server chat:
+        MEDSN_Server.chat.writeChat(leaveMsg);
     }
 
 
@@ -145,11 +153,11 @@ public class Client_Manager
                     // ---------------- Get client "credentials":
                     byte[] array = new byte[in.readInt()];
                     in.read(array);
-                    String username = Arrays.toString(array);
+                    String username = new String(array, StandardCharsets.UTF_8);
 
                     array = new byte[in.readInt()];
                     in.read(array);
-                    String password = Arrays.toString(array);
+                    String password = new String(array, StandardCharsets.UTF_8);
 
                     String address = socket.getRemoteSocketAddress().toString();
 
@@ -221,8 +229,9 @@ public class Client_Manager
                             // Report back to the Client that the connection was denied because their IP Address is banned.
                             out.writeShort(MEDSN_Server.NET_SERVER_JOIN_DENY_BANNED_IP);
                         }
-                        else // Client is allowed to connect:
+                        else// Client is allowed to connect:
                         {
+                            System.out.println("The new client is allowed to connect.");
                             // Create a new Client instance with the socket and username:
                             Client newClient = new Client(socket, username, this);
                             // Give the Client admin privileges if they provided the correct admin password:
@@ -234,7 +243,9 @@ public class Client_Manager
                             //threadList.add(clientThread);
                             clientThread.start();
                             // Report back to the Client that the connection was accepted:
+                            out.flush();
                             out.writeShort(MEDSN_Server.NET_SERVER_JOIN_ACCEPT);
+                            out.flush();
                             // Notify the server that the Client has joined:
                             handleClientJoin(newClient);
                         }
@@ -262,7 +273,9 @@ public class Client_Manager
             for (Client c : clientList)
             {
                 // Send the "server quit" message with the proper identifier:
+                c.out.flush();
                 c.out.writeShort(MEDSN_Server.NET_SERVER_QUIT);
+                c.out.flush();
                 // Stop the IO thread process in the Client:
                 c.setListening(false);
             }

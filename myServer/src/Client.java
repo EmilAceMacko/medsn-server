@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class Client implements Runnable {
@@ -13,8 +14,8 @@ public class Client implements Runnable {
     public Socket clientSocket;
     public DataInputStream in;
     public DataOutputStream out;
-    boolean listening;
-    boolean admin;
+    boolean listening = true;
+    boolean admin = false;
 
     //Constructor
     public Client(Socket newClientSocket, String newUsername, Client_Manager newOwner) {
@@ -39,7 +40,7 @@ public class Client implements Runnable {
                 if (input == MEDSN_Server.NET_CLIENT_CHAT) {
                     byte[] array = new byte[in.readInt()];
                     in.read(array);
-                    String message = Arrays.toString(array);
+                    String message = new String(array, StandardCharsets.UTF_8);
                     owner.handleClientInput(message, this);
                 }
             }

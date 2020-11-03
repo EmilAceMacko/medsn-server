@@ -1,10 +1,12 @@
 //Valdemar
 package src;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class MEDSN_Server implements Constants {
     private static short state;
-    private static Chat chat;
+    public static Chat chat;
     private static Client_Manager clientMgr;
     private static int maxClients;
     private static int chatLength;
@@ -19,6 +21,10 @@ public class MEDSN_Server implements Constants {
         chat = new Chat();
         clientMgr = new Client_Manager();
         setState(STATE_SERVER_CLOSED);
+
+        maxClients = 32;
+
+        chat.writeChat("Server boot with IP: " + clientMgr.serverSocket.getInetAddress());
 
         while(state != STATE_NULL)
         {
@@ -85,12 +91,13 @@ public class MEDSN_Server implements Constants {
                 case("/open"):
                 {
                     sendToClients = false;
-                    if(adminPassword != "")
+                    if(!adminPassword.equals(""))
                     {
                         chat.writeChat("Opening the server...");
                         setState(STATE_SERVER_OPENING);
                     }
                     else chat.writeChat("You cannot open the server without an admin password. Please set an admin password with /setadminpass <adminpass>");
+                    break;
                 }
                 case("/close"):
                 {
@@ -102,6 +109,7 @@ public class MEDSN_Server implements Constants {
                         setState(STATE_SERVER_CLOSING);
                     }
                     else chat.writeChat("You cannot close the server because it is not open.");
+                    break;
                 }
                 case("/help"):
                 {
@@ -112,6 +120,7 @@ public class MEDSN_Server implements Constants {
                             "/open - Open up the server for clients to establish connections.\n" +
                             "/close - Close the server and terminate all connections.\n" +
                             "/setadminpass <adminpass> - Change the password for admin privileges.");
+                    break;
                 }
                 case("/setadminpass"):
                 {
@@ -121,6 +130,7 @@ public class MEDSN_Server implements Constants {
                         adminPassword = param[1];
                         chat.writeChat("The admin password has been set.");
                     }
+                    break;
                 }
                 case("/quit"):
                 case("/exit"):
