@@ -3,18 +3,16 @@ package src;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Client_Manager
 {
     //public MEDSN_Server owner;
-    private int port = 8000;
-    public ServerSocket serverSocket;
+    private int port = 1;
+    public ServerSocket serverSocket = null;
     public ArrayList<Client> clientList;
     //private ArrayList<Runnable> threadList;
 
@@ -23,14 +21,33 @@ public class Client_Manager
         //owner = _owner;
         clientList = new ArrayList<>();
         //threadList = new ArrayList<>();
+    }
+
+    public boolean open()
+    {
         try
         {
             serverSocket = new ServerSocket(port); // Create the server socket.
+            return true;
         }
         catch(IOException e)
         {
             System.err.println("SERVER ERROR: " + e + " - Could not set up server socket on port " + port + ".");
-            System.exit(-1); // Close the program.
+            return false;
+        }
+    }
+
+    public boolean close()
+    {
+        try
+        {
+            serverSocket.close();
+            return true;
+        }
+        catch(IOException e)
+        {
+            System.err.println("SERVER ERROR: " + e + " - Could not close server socket on port " + port + ".");
+            return false;
         }
     }
 
@@ -117,10 +134,12 @@ public class Client_Manager
 
         // Stop the IO thread process in the Client:
         client.setListening(false);
+
         // Remove the Client from the Client List:
         clientList.remove(client);
-        // Remove the Thread from the Thread List:
-        //threadList.clear();
+        // Stop and remove the Thread from the Thread List:
+        /*((Thread)threadList.get(index)).interrupt();
+        threadList.remove(index);*/
 
         // Broadcast the notification to all Clients except the Client with which the notification is about:
         for(Client c : clientList)
@@ -286,7 +305,12 @@ public class Client_Manager
         }
         // Clear the Client List and Thread List:
         clientList.clear();
-        //threadList.clear();
+
+        /*for (Runnable r : threadList)
+        {
+            ((Thread)r).interrupt();
+        }
+        threadList.clear();*/
     }
 
     // Kick (disconnect) a specific client (by their IP Address): (Returns false if Client is not found.)

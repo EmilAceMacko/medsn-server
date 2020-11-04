@@ -1,5 +1,4 @@
 package src;
-import java.util.Scanner;
 
 public class Chat {
     //MEDSN_Server owner;

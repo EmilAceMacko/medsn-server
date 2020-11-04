@@ -5,7 +5,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class Client implements Runnable {
     private Client_Manager owner;
@@ -32,7 +31,7 @@ public class Client implements Runnable {
         }
     }
 
-    //Reads message written by client
+    //Reads message sent by client
     public void run() {
         try {
             while (listening) {
@@ -42,6 +41,10 @@ public class Client implements Runnable {
                     in.read(array);
                     String message = new String(array, StandardCharsets.UTF_8);
                     owner.handleClientInput(message, this);
+                }
+                else if(input == MEDSN_Server.NET_CLIENT_QUIT)
+                {
+                    owner.disconnectClient(this);
                 }
             }
         }
@@ -62,11 +65,11 @@ public class Client implements Runnable {
     }
 
     //Setters are listed below
-    public void setAdmin(boolean admin) {
-        this.admin = admin;
+    public void setAdmin(boolean _admin) {
+        admin = _admin;
     }
 
-    public void setListening(Boolean listening) {
-        this.listening = listening;
+    public void setListening(Boolean _listening) {
+        listening = _listening;
     }
 }

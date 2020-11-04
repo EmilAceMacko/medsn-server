@@ -1,5 +1,5 @@
-//Valdemar
 package src;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -24,7 +24,12 @@ public class MEDSN_Server implements Constants {
 
         maxClients = 32;
 
-        chat.writeChat("Server boot with IP: " + clientMgr.serverSocket.getInetAddress());
+        // Add shutdown hook (runs a last thread when application is shut down):
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                if(state == STATE_SERVER_OPEN) MEDSN_Server.clientMgr.terminateConnections();
+            }
+        });
 
         while(state != STATE_NULL)
         {
@@ -36,7 +41,9 @@ public class MEDSN_Server implements Constants {
                 }
                 case(STATE_SERVER_OPENING):
                 {
-                    setState(STATE_SERVER_OPEN);
+                    if(clientMgr.open()) setState(STATE_SERVER_OPEN);
+                    else setState(STATE_SERVER_CLOSED);
+
                     break;
                 }
                 case(STATE_SERVER_OPEN):
@@ -46,13 +53,16 @@ public class MEDSN_Server implements Constants {
                 }
                 case(STATE_SERVER_CLOSING):
                 {
+                    System.out.println("SYS: reached start of closing state");
+                    clientMgr.close();
                     setState(STATE_SERVER_CLOSED);
+                    System.out.println("SYS: reached end of closing state");
                     break;
                 }
 
             }
         }
-    }
+    } // End of main.
 
     //Setters and getters for the short 'state'
     public static void setState (short newState) {
@@ -91,12 +101,16 @@ public class MEDSN_Server implements Constants {
                 case("/open"):
                 {
                     sendToClients = false;
-                    if(!adminPassword.equals(""))
+                    if(state == STATE_SERVER_CLOSED)
                     {
-                        chat.writeChat("Opening the server...");
-                        setState(STATE_SERVER_OPENING);
+                        if (!adminPassword.equals(""))
+                        {
+                            chat.writeChat("Opening the server...");
+                            setState(STATE_SERVER_OPENING);
+                        } else
+                            chat.writeChat("You cannot open the server without an admin password. Please set an admin password with /setadminpass <adminpass>");
                     }
-                    else chat.writeChat("You cannot open the server without an admin password. Please set an admin password with /setadminpass <adminpass>");
+                    else chat.writeChat("You cannot open the server because it is not closed.");
                     break;
                 }
                 case("/close"):
@@ -107,8 +121,18 @@ public class MEDSN_Server implements Constants {
                         clientMgr.terminateConnections();
                         chat.writeChat("Closing the server...");
                         setState(STATE_SERVER_CLOSING);
+                        System.out.println("SYS: Reached end of /close command case");
                     }
                     else chat.writeChat("You cannot close the server because it is not open.");
+                    break;
+                }
+                case("/state"):
+                {
+                    sendToClients = false;
+                    if(state == STATE_SERVER_OPEN) chat.writeChat("SERVER IS OPEN");
+                    if(state == STATE_SERVER_CLOSED) chat.writeChat("SERVER IS CLOSED");
+                    if(state == STATE_SERVER_CLOSING) chat.writeChat("SERVER IS CLOSING");
+                    if(state == STATE_SERVER_OPENING) chat.writeChat("SERVER IS OPENING");
                     break;
                 }
                 case("/help"):
@@ -133,6 +157,12 @@ public class MEDSN_Server implements Constants {
                     break;
                 }
                 case("/quit"):
+                {
+                    sendToClients = false;
+                    clientMgr.terminateConnections();
+                    setState(STATE_NULL);
+                    break;
+                }
                 case("/exit"):
                 {
                     sendToClients = false;
@@ -141,11 +171,11 @@ public class MEDSN_Server implements Constants {
                     break;
                 }
             }
+        }
 
-            if(sendToClients && state == STATE_SERVER_OPEN)
-            {
-                handleServerString(chatStr, null);
-            }
+        if(sendToClients && state == STATE_SERVER_OPEN)
+        {
+            handleServerString(chatStr, null);
         }
     }
 
@@ -158,7 +188,7 @@ public class MEDSN_Server implements Constants {
         }
 
         // Get the username of the calling Client:
-        String name = "NULL";
+        String name = "SERVER";
         if(client != null) name = client.username;
 
         boolean broadcastToAll = false;
@@ -299,9 +329,16 @@ public class MEDSN_Server implements Constants {
                     }
                     break;
                 }
+                default:
+                {
 
-
+                    break;
+                }
             }
+        }
+        else // Not a command - chat message string:
+        {
+            outputGlobal(name + ": " + chatStr);
         }
     }
 
