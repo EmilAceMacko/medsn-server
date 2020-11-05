@@ -48,7 +48,7 @@ public class MEDSN_Server implements Constants {
                 }
                 case(STATE_SERVER_OPEN):
                 {
-                    clientMgr.receiveConnections();
+                    //clientMgr.receiveConnections();
                     break;
                 }
                 case(STATE_SERVER_CLOSING):
@@ -285,7 +285,28 @@ public class MEDSN_Server implements Constants {
                 {
                     if(isAdmin)
                     {
-
+                        if(param.length > 1)
+                        {
+                            String cName = param[1];
+                            if(clientMgr.banClientName(param[1]))
+                            {
+                                outputLocal(client,
+                                        "User " + cName + " was banned.",
+                                        "Server: " + name + " banned " + cName + ".");
+                            }
+                            else
+                            {
+                                outputLocal(client,
+                                        "Banned, but could not disconnect " + cName + ", no client by that name on server.",
+                                        "Server: " + name + " used /banname on " + cName + " (not found).");
+                            }
+                        }
+                        else
+                        {
+                            outputLocal(client,
+                                    "No valid username was given. /banname <username>",
+                                    "Server: " + name + " used /banname unsuccessfully.");
+                        }
                     }
                     break;
                 }
@@ -293,7 +314,28 @@ public class MEDSN_Server implements Constants {
                 {
                     if(isAdmin)
                     {
-
+                        if(param.length > 1)
+                        {
+                            String cIP = param[1];
+                            if(clientMgr.banClientIP(param[1]))
+                            {
+                                outputLocal(client,
+                                        "IP " + cIP + " was banned.",
+                                        "Server: " + name + " banned " + cIP + ".");
+                            }
+                            else
+                            {
+                                outputLocal(client,
+                                        "Banned, but could not disconnect " + cIP + ", no client by that IP on server.",
+                                        "Server: " + name + " used /banip on " + cIP + " (not found).");
+                            }
+                        }
+                        else
+                        {
+                            outputLocal(client,
+                                    "No valid IP was given. /banip <IP-address>",
+                                    "Server: " + name + " used /banip unsuccessfully.");
+                        }
                     }
                     break;
                 }
@@ -301,7 +343,28 @@ public class MEDSN_Server implements Constants {
                 {
                     if(isAdmin)
                     {
-
+                        if(param.length > 1)
+                        {
+                            String cName = param[1];
+                            if(clientMgr.kickClientName(param[1]))
+                            {
+                                outputLocal(client,
+                                        "User " + cName + " was kicked.",
+                                        "Server: " + name + " kicked " + cName + ".");
+                            }
+                            else
+                            {
+                                outputLocal(client,
+                                        "No user by the name " + cName + " was found.",
+                                        "Server: " + name + " used /kickname on " + cName + " (not found).");
+                            }
+                        }
+                        else
+                        {
+                            outputLocal(client,
+                                    "No valid username was given. /kickname <username>",
+                                    "Server: " + name + " used /kickname unsuccessfully.");
+                        }
                     }
                     break;
                 }
@@ -309,7 +372,28 @@ public class MEDSN_Server implements Constants {
                 {
                     if(isAdmin)
                     {
-
+                        if(param.length > 1)
+                        {
+                            String cIP = param[1];
+                            if(clientMgr.kickClientIP(param[1]))
+                            {
+                                outputLocal(client,
+                                        "IP " + cIP + " was kicked.",
+                                        "Server: " + name + " kicked " + cIP + ".");
+                            }
+                            else
+                            {
+                                outputLocal(client,
+                                        "No user with the IP " + cIP + " was found.",
+                                        "Server: " + name + " used /kickip on " + cIP + " (not found).");
+                            }
+                        }
+                        else
+                        {
+                            outputLocal(client,
+                                    "No valid IP was given. /kickip <IP-address>",
+                                    "Server: " + name + " used /kickip unsuccessfully.");
+                        }
                     }
                     break;
                 }
@@ -317,7 +401,28 @@ public class MEDSN_Server implements Constants {
                 {
                     if(isAdmin)
                     {
-
+                        if(param.length > 1)
+                        {
+                            String cName = param[1];
+                            if(clientMgr.pardonClientName(param[1]))
+                            {
+                                outputLocal(client,
+                                        "User " + cName + " was pardonned.",
+                                        "Server: " + name + " pardonned " + cName + ".");
+                            }
+                            else
+                            {
+                                outputLocal(client,
+                                        "No user by the name " + cName + " has been banned.",
+                                        "Server: " + name + " used /pardonname on " + cName + " (not found).");
+                            }
+                        }
+                        else
+                        {
+                            outputLocal(client,
+                                    "No valid username was given. /pardonname <username>",
+                                    "Server: " + name + " used /pardonname unsuccessfully.");
+                        }
                     }
                     break;
                 }
@@ -325,13 +430,29 @@ public class MEDSN_Server implements Constants {
                 {
                     if(isAdmin)
                     {
-
+                        if(param.length > 1)
+                        {
+                            String cIP = param[1];
+                            if(clientMgr.pardonClientIP(param[1]))
+                            {
+                                outputLocal(client,
+                                        "IP " + cIP + " was pardonned.",
+                                        "Server: " + name + " pardonned " + cIP + ".");
+                            }
+                            else
+                            {
+                                outputLocal(client,
+                                        "No IP " + cIP + " has been banned.",
+                                        "Server: " + name + " used /pardonip on " + cIP + " (not found).");
+                            }
+                        }
+                        else
+                        {
+                            outputLocal(client,
+                                    "No valid IP was given. /pardonip <IP-address>",
+                                    "Server: " + name + " used /pardonip unsuccessfully.");
+                        }
                     }
-                    break;
-                }
-                default:
-                {
-
                     break;
                 }
             }

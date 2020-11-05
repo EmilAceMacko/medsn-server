@@ -14,6 +14,8 @@ public class Client_Manager
     private int port = 1;
     public ServerSocket serverSocket = null;
     public ArrayList<Client> clientList;
+    public SocketThread receiver;
+    public Socket newSocket = null;
     //private ArrayList<Runnable> threadList;
 
     Client_Manager()
@@ -28,6 +30,8 @@ public class Client_Manager
         try
         {
             serverSocket = new ServerSocket(port); // Create the server socket.
+            receiver = new SocketThread(this);
+            receiver.start();
             return true;
         }
         catch(IOException e)
@@ -41,7 +45,10 @@ public class Client_Manager
     {
         try
         {
+            receiver.setAccepting(false);
+            receiver = null;
             serverSocket.close();
+            serverSocket = null;
             return true;
         }
         catch(IOException e)
@@ -152,19 +159,19 @@ public class Client_Manager
 
 
     // Check and handle any Clients that request to connect to the server: (Meant to happen continuously!)
-    public void receiveConnections()
+    /*public void receiveConnections()
     {
-        Socket socket = null;
+        //Socket socket = null;
         try
         {
             // Check if we received a connection from a client:
-            socket = serverSocket.accept();
+            //newSocket = receiver.getSocket();
 
-            if(socket != null)
+            if(newSocket != null)
             {
                 // Get IO streams from socket:
-                DataInputStream in = new DataInputStream(socket.getInputStream());
-                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                DataInputStream in = new DataInputStream(newSocket.getInputStream());
+                DataOutputStream out = new DataOutputStream(newSocket.getOutputStream());
 
                 // Check if this new client is attempting to establish a connection:
                 if(in.readShort() == MEDSN_Server.NET_CLIENT_JOIN_REQUEST)
@@ -178,7 +185,7 @@ public class Client_Manager
                     in.read(array);
                     String password = new String(array, StandardCharsets.UTF_8);
 
-                    String address = socket.getRemoteSocketAddress().toString();
+                    String address = newSocket.getRemoteSocketAddress().toString();
 
                     // ---------------- Check if this new client is allowed to connect:
                     boolean roomForClient = true;
@@ -281,7 +288,7 @@ public class Client_Manager
         {
             System.err.println("SERVER ERROR: " + e + " - Could not accept socket.");
         }
-    }
+    }*/
 
     // Disconnects all connected Clients (with the message that the server is closing):
     public void terminateConnections()
@@ -378,7 +385,7 @@ public class Client_Manager
     // Ban a specific client (by their Username): (Returns false if the Client was not connected when banned.)
     public boolean banClientName(String name)
     {
-        // Add the IP Address to the ban list:
+        // Add the username to the ban list:
         MEDSN_Server.banNameList.add(name);
         // Find and disconnect the client:
         boolean found = false;

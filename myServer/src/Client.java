@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 public class Client implements Runnable {
     private Client_Manager owner;
+    public String realName;
     public String username;
     public String address;
     public Socket clientSocket;
@@ -20,6 +21,7 @@ public class Client implements Runnable {
     public Client(Socket newClientSocket, String newUsername, Client_Manager newOwner) {
         this.clientSocket = newClientSocket;
         this.username = newUsername;
+        this.realName = this.username;
         this.owner = newOwner;
         address = clientSocket.getRemoteSocketAddress().toString();
         try {
